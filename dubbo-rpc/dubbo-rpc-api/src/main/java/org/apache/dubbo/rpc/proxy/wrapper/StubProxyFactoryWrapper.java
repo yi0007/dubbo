@@ -114,6 +114,10 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
         return getProxy(invoker, false);
     }
 
+    /**
+     * 调用被包装的ProxyFactory实例的getInvoker方法
+     * 也就是JavassistProxyFactory#getInvoker(T proxy, Class<T> type, URL url)
+     **/
     @Override
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) throws RpcException {
         return proxyFactory.getInvoker(proxy, type, url);

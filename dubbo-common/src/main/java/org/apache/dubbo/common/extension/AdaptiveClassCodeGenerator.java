@@ -86,6 +86,17 @@ public class AdaptiveClassCodeGenerator {
     /**
      * generate and return class code
      */
+    /**
+     * 创建适配器的扩展类的String
+     *
+     * 创建这个适配器的扩展类，有几个前提：
+     * 1. 必须有SPI的注解
+     * 2. 被SPI声明的接口中至少一个方法有Adaptive注解。
+     * ProxyFactory下面是他的说明：
+     * 当声明再方法上的Adaptive中的value的作用就是，从URL中获取key,value,例如ProxyFactory
+     * 如果URL中是dubbo:xxxx?proxy=jdk,而SPI中的值是javassist,那么就是
+     * String extName = url.getParameter("proxy", "javassist");  //结果是jdk
+     */
     public String generate() {
         // no need to generate adaptive class since there's no adaptive method found.
         if (!hasAdaptiveMethod()) {

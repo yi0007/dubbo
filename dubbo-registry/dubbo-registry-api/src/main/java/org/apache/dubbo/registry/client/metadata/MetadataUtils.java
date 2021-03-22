@@ -63,6 +63,7 @@ public class MetadataUtils {
 
     public static void publishServiceDefinition(URL url) {
         // store in local
+        // 处理服务的元数据信息
         WritableMetadataService.getDefaultExtension().publishServiceDefinition(url);
         // send to remote
 //        if (REMOTE_METADATA_STORAGE_TYPE.equals(url.getParameter(METADATA_KEY))) {

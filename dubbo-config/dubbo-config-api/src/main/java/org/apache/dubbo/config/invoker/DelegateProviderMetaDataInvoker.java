@@ -51,6 +51,11 @@ public class DelegateProviderMetaDataInvoker<T> implements Invoker {
         return invoker.isAvailable();
     }
 
+    /**
+     * Inocation就是对要调用方法的包装，里面包含的接口方法的名称，参数类型，参数等信息
+     *
+     * 这里就是对要调用具体方法的执行逻辑
+     **/
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         return invoker.invoke(invocation);

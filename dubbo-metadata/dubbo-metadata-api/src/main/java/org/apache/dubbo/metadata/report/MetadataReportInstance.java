@@ -34,8 +34,14 @@ import static org.apache.dubbo.metadata.report.support.Constants.METADATA_REPORT
  */
 public class MetadataReportInstance {
 
+    /*
+     * 元数据初始化标志
+     */
     private static AtomicBoolean init = new AtomicBoolean(false);
 
+    /*
+     * 元数据信息存储类
+     */
     private static final Map<String, MetadataReport> metadataReports = new HashMap<>();
 
     public static void init(MetadataReportConfig config) {

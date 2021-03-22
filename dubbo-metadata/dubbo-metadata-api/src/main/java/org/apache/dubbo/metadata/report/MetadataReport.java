@@ -30,6 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 从接口可以看出，这个类的实现类主要存储的是 ：
+ * Provider暴露的接口服务的URL信息
+ * Consumer订阅的接口服务的URL信息
+ * 接口的定义信息
+ * 对于不同的元数据注册中心，会有不同的实现
+ */
 public interface MetadataReport {
     /**
      * Service Definition -- START

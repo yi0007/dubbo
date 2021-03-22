@@ -59,10 +59,12 @@ public class QosProtocolWrapper implements Protocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        // 如果是应用注册，则启动Qos服务
         if (UrlUtils.isRegistry(invoker.getUrl())) {
             startQosServer(invoker.getUrl());
             return protocol.export(invoker);
         }
+        // 暴露接口就直接调用自己包装的Protocol实例的export方法
         return protocol.export(invoker);
     }
 

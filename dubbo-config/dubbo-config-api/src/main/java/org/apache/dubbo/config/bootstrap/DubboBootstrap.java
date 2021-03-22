@@ -158,6 +158,9 @@ public class DubboBootstrap extends GenericEventListener {
 
     private final ExecutorRepository executorRepository = getExtensionLoader(ExecutorRepository.class).getDefaultExtension();
 
+    /*
+     * 配置管理器，用于管理各层的配置
+     */
     private final ConfigManager configManager;
 
     private final Environment environment;
@@ -168,12 +171,21 @@ public class DubboBootstrap extends GenericEventListener {
 
     private volatile boolean referAsync;
 
+    /*
+     * 初始化标志，判断initialize()是否正在初始化
+     */
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
+    /*
+     * dubbo启动标志，判断dubbo服务是否正在启动
+     */
     private AtomicBoolean started = new AtomicBoolean(false);
 
     private AtomicBoolean ready = new AtomicBoolean(true);
 
+    /*
+     * dubbo服务销毁标志，判断dubbo服务是否正在执行销毁操作
+     */
     private AtomicBoolean destroyed = new AtomicBoolean(false);
 
     private volatile ServiceInstance serviceInstance;
@@ -202,11 +214,15 @@ public class DubboBootstrap extends GenericEventListener {
         return instance;
     }
 
+
     private DubboBootstrap() {
+        //获取配置管理器ConfigManager 实例对象
         configManager = ApplicationModel.getConfigManager();
+        //获取环境变量实例对象
         environment = ApplicationModel.getEnvironment();
 
         DubboShutdownHook.getDubboShutdownHook().register();
+        //在关机回调事件中回调DubboBootstrap中的destroy逻辑
         ShutdownHookCallbacks.INSTANCE.addCallback(new ShutdownHookCallback() {
             @Override
             public void callback() throws Throwable {
@@ -524,19 +540,25 @@ public class DubboBootstrap extends GenericEventListener {
             return;
         }
 
+        //1. 初始化框架的扩展
         ApplicationModel.initFrameworkExts();
 
+        //2. 初始化配置中心
         startConfigCenter();
 
+        //4. 加载远程的配置
         loadRemoteConfigs();
 
+        //5. 检查全局配置
         checkGlobalConfigs();
 
         // @since 2.7.8
         startMetadataCenter();
 
+        //6. 初始化元数据操作接口
         initMetadataService();
 
+        //7. 将本身添加到事件监听器列表中，因为DubboBootstrap本身就是一个事件监听器
         initEventListener();
 
         if (logger.isInfoEnabled()) {
@@ -604,8 +626,10 @@ public class DubboBootstrap extends GenericEventListener {
 
     private void startConfigCenter() {
 
+        // 当注册中心使用zookeeper时，如果配置中心地址没有指定就以注册中心zookeeper作为默认的配置中心
         useRegistryAsConfigCenterIfNecessary();
 
+        // 从ConfigManager实例中获取配置中心的配置
         Collection<ConfigCenterConfig> configCenters = configManager.getConfigCenters();
 
         // check Config Center
@@ -628,8 +652,10 @@ public class DubboBootstrap extends GenericEventListener {
             for (ConfigCenterConfig configCenter : configCenters) {
                 compositeDynamicConfiguration.addConfiguration(prepareEnvironment(configCenter));
             }
+            // 然后把获取的配置封装之后存入Environment对象实例中
             environment.setDynamicConfiguration(compositeDynamicConfiguration);
         }
+        // 刷新配置
         configManager.refreshAll();
     }
 
@@ -637,11 +663,14 @@ public class DubboBootstrap extends GenericEventListener {
 
         useRegistryAsMetadataCenterIfNecessary();
 
+        // 获取应用配置
         ApplicationConfig applicationConfig = getApplication();
 
+        // 获取元数据配置中心类型
         String metadataType = applicationConfig.getMetadataType();
         // FIXME, multiple metadata config support.
         Collection<MetadataReportConfig> metadataReportConfigs = configManager.getMetadataConfigs();
+        // 如果没有元数据配置信息，并且ApplicationConfig中设置的元数据配置类型为remote ，就抛出异常
         if (CollectionUtils.isEmpty(metadataReportConfigs)) {
             if (REMOTE_METADATA_STORAGE_TYPE.equals(metadataType)) {
                 throw new IllegalStateException("No MetadataConfig found, Metadata Center address is required when 'metadata=remote' is enabled.");
@@ -650,10 +679,13 @@ public class DubboBootstrap extends GenericEventListener {
         }
 
         for (MetadataReportConfig metadataReportConfig : metadataReportConfigs) {
+            // 目前只是非空校验
             ConfigValidationUtils.validateMetadataConfig(metadataReportConfig);
             if (!metadataReportConfig.isValid()) {
                 return;
             }
+
+            // MetadataReportInstance是元数据信息的全局实例，存放元数据信息的详细信息，init方法是将配置中心地址写入到这个全局实例
             MetadataReportInstance.init(metadataReportConfig);
         }
     }
@@ -665,14 +697,17 @@ public class DubboBootstrap extends GenericEventListener {
      */
     private void useRegistryAsConfigCenterIfNecessary() {
         // we use the loading status of DynamicConfiguration to decide whether ConfigCenter has been initiated.
+        // 配置了注册中心
         if (environment.getDynamicConfiguration().isPresent()) {
             return;
         }
 
+        //配置中心没有配置，如果有就直接返回
         if (CollectionUtils.isNotEmpty(configManager.getConfigCenters())) {
             return;
         }
 
+        //从configManager中获取注册中心的地址，然后利用注册中心的地址信息构建ConfigCenterConfig
         configManager
                 .getDefaultRegistries()
                 .stream()
@@ -884,15 +919,18 @@ public class DubboBootstrap extends GenericEventListener {
 
     /**
      * Start the bootstrap
+     * 启动dubbo服务
      */
     public DubboBootstrap start() {
+        // 判断是不是没有启动，如果是就将true设置给started表示，然后执行启动程序
         if (started.compareAndSet(false, true)) {
             ready.set(false);
+            // 初始化
             initialize();
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
             }
-            // 1. export Dubbo Services
+            // 1. export Dubbo Services 暴露Provider的 Services
             exportServices();
 
             // Not only provider register
@@ -903,6 +941,7 @@ public class DubboBootstrap extends GenericEventListener {
                 registerServiceInstance();
             }
 
+            // 处理Consumer的ReferenceConfig
             referServices();
             if (asyncExportingFutures.size() > 0) {
                 new Thread(() -> {
@@ -1079,19 +1118,25 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     private void exportServices() {
+        // 从配置管理器中获取到所有的要暴露的服务配置，一个接口类对应一个ServiceConfigBase实例
         configManager.getServices().forEach(sc -> {
             // TODO, compatible with ServiceConfig.export()
             ServiceConfig serviceConfig = (ServiceConfig) sc;
+            // 将DubboBootstrap实例赋值给ServiceConfig
             serviceConfig.setBootstrap(this);
 
+            // 判断是否异步暴露接口
             if (exportAsync) {
+                // 如果是异步暴露接口，就获取一个线程池来异步执行接口暴露逻辑
                 ExecutorService executor = executorRepository.getServiceExporterExecutor();
                 Future<?> future = executor.submit(() -> {
+                    // 暴露接口，将接口信息注册到注册中心
                     sc.export();
                     exportedServices.add(sc);
                 });
                 asyncExportingFutures.add(future);
             } else {
+                // 同步export
                 sc.export();
                 exportedServices.add(sc);
             }

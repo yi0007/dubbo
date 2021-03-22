@@ -25,6 +25,9 @@ import java.util.List;
 
 /**
  * Protocol. (API/SPI, Singleton, ThreadSafe)
+ * 在使用PROTOCOL获取暴露接口时，实际上PROTOCOL是一个包装类。最底层包含了DubboProtocol。
+ * 使用QosProtocolWrapper ProtocolFilterWrapper ProtocolListenerWrapper这三个包装类一层一层的包装DubboProtocol
+ * 这里就使用到了装饰者设计模式
  */
 @SPI("dubbo")
 public interface Protocol {
@@ -48,6 +51,7 @@ public interface Protocol {
      * @param invoker Service invoker
      * @return exporter reference for exported service, useful for unexport the service later
      * @throws RpcException thrown when error occurs during export the service, for example: port is occupied
+     * provider端暴露接口
      */
     @Adaptive
     <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
@@ -66,6 +70,7 @@ public interface Protocol {
      * @param url  URL address for the remote service
      * @return invoker service's local proxy
      * @throws RpcException when there's any error while connecting to the service provider
+     * consumer端引用接口
      */
     @Adaptive
     <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;

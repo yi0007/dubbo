@@ -54,6 +54,9 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
 
     private final static Logger logger = LoggerFactory.getLogger(ZookeeperMetadataReport.class);
 
+    /*
+     * 在zookeeper中的根目录，默认的根目录是dubbo, 可以通过dubbo.register.group=xxx来指定
+     */
     private final String root;
 
     final ZookeeperClient zkClient;
@@ -67,11 +70,13 @@ public class ZookeeperMetadataReport extends AbstractMetadataReport {
         if (url.isAnyHost()) {
             throw new IllegalStateException("registry address == null");
         }
+        // 获取URL中的group参数
         String group = url.getParameter(GROUP_KEY, DEFAULT_ROOT);
         if (!group.startsWith(PATH_SEPARATOR)) {
             group = PATH_SEPARATOR + group;
         }
         this.root = group;
+        // 初始化zookeeper客户端
         zkClient = zookeeperTransporter.connect(url);
     }
 
